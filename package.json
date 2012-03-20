@@ -1,0 +1,18 @@
+{
+  "name": "astropng-js",
+  "version": "0.0.1",
+  "description": "An AstroPNG reader for the browser",
+  "keywords": ["astronomy", "png", "fits", "shazaam"],
+  "homepage": "https://www.zooniverse.org/",
+  "author": {
+  "name": "Amit Kapadia",
+  "email": "amit@zooniverse.org",
+  "url": "https://www.zooniverse.org/"
+  },
+  "files": ["lib/astropng.js"],
+  "main": "lib/astropng.js",
+  "repository": {
+  "type": "git",
+  "url": "git://github.com:kapadia/astropng-js.git"
+  }
+}
