@@ -1,11 +1,8 @@
 
 class AstroPNG
   
-  constructor: (resource_url) ->
-    
-  
-  constructor: (binary_string) ->
-    @view = new jDataView binary_string, undefined, undefined, false
+  constructor: (buffer) ->
+    @view = new jDataView buffer, undefined, undefined, false
     @idat_chunks = []
     
     # Variables to help check PNG format
@@ -23,8 +20,12 @@ class AstroPNG
       switch chunk.type
         when 'IHDR'
           @read_ihdr chunk.data
-        when 'wHAT'
-          @read_what chunk.data
+        when 'fITS'
+          @read_fits chunk.data
+        when 'qANT'
+          @read_quantization_parameters chunk.data
+        when 'nANS'
+          @read_nan_locations chunk.data
         when 'IDAT'
           @read_idat chunk.data
         # when 'IEND'
@@ -49,25 +50,18 @@ class AstroPNG
     })
   
   
-  ###
-  Convert bytes to an integer
-  ###
+  # Convert bytes to an integer
   @to_integer: (bytes, index) ->
     return (bytes[index] << 24) | (bytes[index + 1] << 16) | (bytes[index + 2] << 8) | bytes[index + 3]
    
-   
-  ###
-  Verify the PNG signature
-  ###
+
+  # Verify PNG signature
   @png_signature: [137, 80, 78, 71, 13, 10, 26, 10]
   check_signature: -> @verify_byte(byte) for byte in PNG.png_signature
   verify_byte: (byte) -> 
     throw "PNG signature is not correct" unless byte is @view.getUint8()
-   
-   
-  ###
-  Read a PNG chunk, determines the length and type, and extracts the data
-  ###
+  
+  # Read a PNG chunk, determines the length and type, and extracts the data
   read_chunk: ->
     length = @view.getUint32()
     type = @view.getString(4)
@@ -141,11 +135,11 @@ class AstroPNG
   
   
   ###
-  Read the custom wHAT chunk.  Extracts
+  Read the custom fITS chunk.  Extracts
    * Minimum pixel value
    * Maximum pixel value
   ###
-  read_what: (data) ->
+  read_fits: (data) ->
     if @bit_depth is 8
       @min_pixel = data[0]
       @max_pixel = data[1]
@@ -154,19 +148,14 @@ class AstroPNG
       @max_pixel = (data[2] << 8 | data[3])
     # console.log 'min and max pixels', @min_pixel, @max_pixel
     
-  
-  ###
-  Reads the IDAT (image data) into the class scope for later processing.
-  ###
+  # Reads the IDAT (image data) into the class scope for later processing.
   read_idat: (data) ->
     # Store IDAT chunks
     @idat_chunks[@number_of_idat] = data
     @number_of_idat += 1
 
     
-  ###
-  Scans a line for image data.
-  ###
+  # Scans a line for image data.
   read_line: =>
     # Reset the filter parameters
     a_param = (0 for index in [1..@param_length])
@@ -193,10 +182,7 @@ class AstroPNG
     data = ((recon_data[index] << @shift | recon_data[index + @index_offset]) for index in [0..@line_length - 1] by @param_length)
     return data
     
-    
-  ###
-  Various filter functions, defined by the PNG specifications.
-  ###
+  # Various filter functions, defined by the PNG specifications: http://www.w3.org/TR/PNG/#9Filters
   filter_none: (x, a, b, c) =>
     return x
   
