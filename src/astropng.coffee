@@ -11,7 +11,7 @@ class AstroPNG
     @number_of_idat = 0
     
     @check_signature()
-    
+
     # Set up filtering related variables
     @filters = [@filter_none, @filter_sub, @filter_up, @filter_average, @filter_paeth]
 
@@ -21,7 +21,7 @@ class AstroPNG
         when 'IHDR'
           @read_ihdr chunk.data
         when 'fITS'
-          @read_fits chunk.data
+          @read_fits_header chunk.data
         when 'qANT'
           @read_quantization_parameters chunk.data
         when 'nANS'
@@ -49,16 +49,14 @@ class AstroPNG
            return @data[@chunk][@index - 1]
     })
   
-  
   # Convert bytes to an integer
   @to_integer: (bytes, index) ->
     return (bytes[index] << 24) | (bytes[index + 1] << 16) | (bytes[index + 2] << 8) | bytes[index + 3]
-   
 
   # Verify PNG signature
   @png_signature: [137, 80, 78, 71, 13, 10, 26, 10]
-  check_signature: -> @verify_byte(byte) for byte in PNG.png_signature
-  verify_byte: (byte) -> 
+  check_signature: -> @verify_byte(byte) for byte in AstroPNG.png_signature
+  verify_byte: (byte) ->
     throw "PNG signature is not correct" unless byte is @view.getUint8()
   
   # Read a PNG chunk, determines the length and type, and extracts the data
@@ -97,8 +95,8 @@ class AstroPNG
     # Check if the number of IHDR chunks exceeds one
     throw "PNG contains too many IHDR chunks" if @number_of_ihdr > 1
 
-    @width = PNG.to_integer data, 0
-    @height = PNG.to_integer data, 4
+    @width = AstroPNG.to_integer data, 0
+    @height = AstroPNG.to_integer data, 4
 
     # Check the color type (only supporting grayscale for now)
     allowed_color_types = [0]
@@ -134,20 +132,34 @@ class AstroPNG
     # console.log @width, @height, @bit_depth, @color_type
   
   
-  ###
-  Read the custom fITS chunk.  Extracts
-   * Minimum pixel value
-   * Maximum pixel value
-  ###
-  read_fits: (data) ->
-    if @bit_depth is 8
-      @min_pixel = data[0]
-      @max_pixel = data[1]
-    else if @bit_depth is 16
-      @min_pixel = (data[0] << 8 | data[1])
-      @max_pixel = (data[2] << 8 | data[3])
+  # Read the FITS header  
+  read_fits_header: (data) ->
+    @header = {}
+    header = ""
+    header += String.fromCharCode(value) for value in data
+    cards = header.split("\n");
+    for card in cards
+      c = card.split("=");
+      if c.length == 2        
+        key = c[0].replace(/^\s\s*/, '').replace(/\s\s*$/, '')
+        value = c[1].replace(/^\s\s*/, '').replace(/\s\s*$/, '')
+        @header[key] = value
+    
+    # if @bit_depth is 8
+    #   @min_pixel = data[0]
+    #   @max_pixel = data[1]
+    # else if @bit_depth is 16
+    #   @min_pixel = (data[0] << 8 | data[1])
+    #   @max_pixel = (data[2] << 8 | data[3])
     # console.log 'min and max pixels', @min_pixel, @max_pixel
     
+  # Read the quantization parameters
+  read_quantization_parameters: (data) ->
+    # console.log data
+  
+  read_nan_locations: (data) ->
+    # console.log data
+  
   # Reads the IDAT (image data) into the class scope for later processing.
   read_idat: (data) ->
     # Store IDAT chunks
@@ -215,4 +227,4 @@ class AstroPNG
     return pr
 
 
-window.PNG = PNG
+window.AstroPNG = AstroPNG
