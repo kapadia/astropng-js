@@ -16,37 +16,24 @@ class AstroPNG
     @filters = [@filter_none, @filter_sub, @filter_up, @filter_average, @filter_paeth]
 
     while !@eof
-      chunk = @read_chunk()
-      switch chunk.type
-        when 'IHDR'
-          @read_ihdr chunk.data
-        when 'fITS'
-          @read_fits_header chunk.data
-        when 'qANT'
-          @read_quantization_parameters chunk.data
-        when 'nANS'
-          @read_nan_locations chunk.data
-        when 'IDAT'
-          @read_idat chunk.data
-        # when 'IEND'
-          # console.log 'end of file, baby!'
+      @read_chunk()
 
     # Initialize a decompressor for IDAT
     @chunk_reader = new Inflator ({
-         chunk: 0,
-         index: 2,
-         data: @idat_chunks,
-         num_chunks: @number_of_idat,
-         readByte: () ->
-           if @chunk >= @data.length
+       chunk: 0,
+       index: 2,
+       data: @idat_chunks,
+       num_chunks: @number_of_idat
+       readByte: () ->
+         if @chunk >= @data.length
+           return -1
+         while (@index >= @data[this.chunk].length)
+           @index = 0
+           @chunk += 1
+           if (@chunk >= @num_chunks)
              return -1
-           while (@index >= @data[this.chunk].length)
-             @index = 0
-             @chunk += 1
-             if (@chunk >= @num_chunks)
-               return -1
-           @index += 1
-           return @data[@chunk][@index - 1]
+         @index += 1
+         return @data[@chunk][@index - 1]
     })
   
   # Convert bytes to an integer
@@ -63,20 +50,23 @@ class AstroPNG
   read_chunk: ->
     length = @view.getUint32()
     type = @view.getString(4)
-    # console.log type, length
-    data = (@view.getUint8() for i in [1..length])
-
-    if type == 'IEND'
-      @eof = true
-      return {type: type, data: data}
-
-    if data.length != length
-      throw "PNG chunk out of bounds"
+    
+    switch type
+      when 'IHDR'
+        @read_ihdr length
+      when 'fITS'
+        @read_fits_header length
+      when 'qANT'
+        @read_quantization_parameters length
+      when 'nANS'
+        @read_nan_locations length
+      when 'IDAT'
+        @read_idat length
+      when 'IEND'
+        @eof = true
 
     # Forward to the next chunk
     @view.seek(@view.tell() + 4)
-    return {type: type, data: data}
-
 
   ###
   Read the required IHDR chunk of the PNG.  Sets variables for 
@@ -89,8 +79,10 @@ class AstroPNG
    * filter method
    * interlace method
   ###
-  read_ihdr: (data) ->
+  read_ihdr: (length) ->
     @number_of_ihdr += 1
+    
+    data = (@view.getUint8() for i in [1..length])
 
     # Check if the number of IHDR chunks exceeds one
     throw "PNG contains too many IHDR chunks" if @number_of_ihdr > 1
@@ -128,44 +120,36 @@ class AstroPNG
     # Check the interlace method
     throw "PNG contains an unknown interlace method" if data[12] != 0 and data[12] != 1
     @interlace_method = data[12]
-    
-    # console.log @width, @height, @bit_depth, @color_type
-  
   
   # Read the FITS header  
-  read_fits_header: (data) ->
+  read_fits_header: (length) ->
+    data = @view.getString(length)
+    
+    cards = data.split("\n");
     @header = {}
-    header = ""
-    header += String.fromCharCode(value) for value in data
-    cards = header.split("\n");
     for card in cards
-      c = card.split("=");
+      c = card.split("=")
       if c.length == 2        
         key = c[0].replace(/^\s\s*/, '').replace(/\s\s*$/, '')
         value = c[1].replace(/^\s\s*/, '').replace(/\s\s*$/, '')
         @header[key] = value
     
-    # if @bit_depth is 8
-    #   @min_pixel = data[0]
-    #   @max_pixel = data[1]
-    # else if @bit_depth is 16
-    #   @min_pixel = (data[0] << 8 | data[1])
-    #   @max_pixel = (data[2] << 8 | data[3])
-    # console.log 'min and max pixels', @min_pixel, @max_pixel
-    
   # Read the quantization parameters
-  read_quantization_parameters: (data) ->
-    # console.log data
+  read_quantization_parameters: (length) ->
+    length /= 4
+    nan_representation = [@view.getUint32()]
+    data = (@view.getFloat32() for i in [1..length-1])
+    @quantization_parameters = nan_representation.concat(data)
   
-  read_nan_locations: (data) ->
-    # console.log data
+  read_nan_locations: (length) ->
+    length /= 4
+    @nan_locations = (@view.getUint32() for i in [1..length])
   
   # Reads the IDAT (image data) into the class scope for later processing.
-  read_idat: (data) ->
-    # Store IDAT chunks
+  read_idat: (length) ->
+    data = (@view.getUint8() for i in [1..length])
     @idat_chunks[@number_of_idat] = data
     @number_of_idat += 1
-
     
   # Scans a line for image data.
   read_line: =>
