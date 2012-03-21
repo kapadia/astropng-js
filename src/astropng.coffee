@@ -139,7 +139,6 @@ class AstroPNG
         key = c[0].replace(/['"]/g, '').replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         value = c[1].replace(/['"]/g, '').split("/")[0].replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         @header[key] = value
-    console.log @header
     
   # Read the quantization parameters
   read_quantization_parameters: (length) ->
@@ -147,6 +146,7 @@ class AstroPNG
     nan_representation = [@view.getUint32()]
     data = (@view.getFloat32() for i in [1..length-1])
     @quantization_parameters = nan_representation.concat(data)
+    console.log @quantization_parameters
   
   read_nan_locations: (length) ->
     return if length == 0

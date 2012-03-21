@@ -24,13 +24,29 @@ def create_header():
     header.update('CUNIT2', 'deg')
     return header
 
+
+def random_number_generator(N = 25):
+    """
+    Random number generator as described in:
+
+    http://fits.gsfc.nasa.gov/registry/tilecompression/tilecompression2.2.pdf
+    """
+    a, m, seed = 16807.0, 2147483647.0, 1
+    random_numbers = numpy.empty(N)
+
+    for i in xrange(N):
+        temp = a * seed
+        seed = temp - m * numpy.floor(temp / m)
+        random_numbers[i] = seed / m
+    return random_numbers
+
 def generate_test_data():
     
     DIMENSION = 5
     
     # Create FITS image
-    data = numpy.random.random(DIMENSION*DIMENSION).astype(numpy.float32)
-    data = data.reshape((DIMENSION, DIMENSION))
+    data = 100 * random_number_generator(N=25)
+    data = data.reshape((DIMENSION, DIMENSION)).astype(numpy.float32)
     header = create_header()
     hdu = pyfits.PrimaryHDU(data, header)
     
