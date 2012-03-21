@@ -29,7 +29,7 @@ def generate_test_data():
     DIMENSION = 5
     
     # Create FITS image
-    data = numpy.random.random(DIMENSION*DIMENSION)
+    data = numpy.random.random(DIMENSION*DIMENSION).astype(numpy.float32)
     data = data.reshape((DIMENSION, DIMENSION))
     header = create_header()
     hdu = pyfits.PrimaryHDU(data, header)
@@ -45,7 +45,7 @@ def generate_test_data():
     ap = astropng.AstroPNG('test.fits')
     if os.path.exists(png_fname):
         os.remove(png_fname)
-    ap.to_png('test.png', crush=False)
+    ap.to_png('test.png', crush = False)
     
 if __name__ == '__main__':
     generate_test_data()

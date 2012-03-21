@@ -51,20 +51,26 @@ class AstroPNG
     length = @view.getUint32()
     type = @view.getString(4)
     
+    console.log length, type
+    
     switch type
       when 'IHDR'
         @read_ihdr length
       when 'fITS'
         @read_fits_header length
       when 'qANT'
+        console.log 'qANT'
         @read_quantization_parameters length
       when 'nANS'
+        console.log 'nANS'
         @read_nan_locations length
       when 'IDAT'
+        console.log 'IDAT'
         @read_idat length
       when 'IEND'
         @eof = true
-
+        return
+    
     # Forward to the next chunk
     @view.seek(@view.tell() + 4)
 
@@ -129,10 +135,11 @@ class AstroPNG
     @header = {}
     for card in cards
       c = card.split("=")
-      if c.length == 2        
-        key = c[0].replace(/^\s\s*/, '').replace(/\s\s*$/, '')
-        value = c[1].replace(/^\s\s*/, '').replace(/\s\s*$/, '')
+      if c.length == 2
+        key = c[0].replace(/['"]/g, '').replace(/^\s*([\S\s]*)\b\s*$/, '$1')
+        value = c[1].replace(/['"]/g, '').split("/")[0].replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         @header[key] = value
+    console.log @header
     
   # Read the quantization parameters
   read_quantization_parameters: (length) ->
@@ -142,6 +149,7 @@ class AstroPNG
     @quantization_parameters = nan_representation.concat(data)
   
   read_nan_locations: (length) ->
+    return if length == 0
     length /= 4
     @nan_locations = (@view.getUint32() for i in [1..length])
   
