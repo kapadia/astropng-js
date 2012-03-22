@@ -35,7 +35,6 @@ describe("AstroPNG", function(){
       });  
   });
 
-
   it("can read the IHDR chunk", function(){
     expect(ap.width).toEqual(6);
     expect(ap.height).toEqual(6);

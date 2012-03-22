@@ -66,7 +66,7 @@ class AstroPNG
     length = @view.getUint32()
     type = @view.getString(4)
     
-    console.log length, type
+    # console.log length, type
     
     switch type
       when 'IHDR'
