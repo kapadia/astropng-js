@@ -42,10 +42,12 @@ def random_number_generator(N = 25):
 
 def generate_test_data():
     
-    DIMENSION = 5
+    DIMENSION = 6
     
     # Create FITS image
-    data = 100 * random_number_generator(N=25)
+    data = 100 * random_number_generator(N = DIMENSION*DIMENSION)
+    data[14] = numpy.nan
+    data[17] = numpy.nan
     data = data.reshape((DIMENSION, DIMENSION)).astype(numpy.float32)
     header = create_header()
     hdu = pyfits.PrimaryHDU(data, header)

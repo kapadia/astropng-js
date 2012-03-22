@@ -59,13 +59,10 @@ class AstroPNG
       when 'fITS'
         @read_fits_header length
       when 'qANT'
-        console.log 'qANT'
         @read_quantization_parameters length
       when 'nANS'
-        console.log 'nANS'
         @read_nan_locations length
       when 'IDAT'
-        console.log 'IDAT'
         @read_idat length
       when 'IEND'
         @eof = true
@@ -129,8 +126,9 @@ class AstroPNG
   
   # Read the FITS header  
   read_fits_header: (length) ->
-    data = @view.getString(length)
+    return if length == 0
     
+    data = @view.getString(length)
     cards = data.split("\n");
     @header = {}
     for card in cards
@@ -142,14 +140,15 @@ class AstroPNG
     
   # Read the quantization parameters
   read_quantization_parameters: (length) ->
+    return if length == 0
+    
     length /= 4
-    nan_representation = [@view.getUint32()]
-    data = (@view.getFloat32() for i in [1..length-1])
-    @quantization_parameters = nan_representation.concat(data)
+    @quantization_parameters = (@view.getFloat32() for i in [1..length])
     console.log @quantization_parameters
   
   read_nan_locations: (length) ->
     return if length == 0
+    
     length /= 4
     @nan_locations = (@view.getUint32() for i in [1..length])
   
