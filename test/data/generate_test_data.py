@@ -1,4 +1,5 @@
 import os
+import base64
 import numpy
 import pyfits
 import astropng
@@ -60,10 +61,16 @@ def generate_test_data():
     hdu.writeto('test.fits')
     
     # Convert to PNG
-    ap = astropng.AstroPNG('test.fits')
+    ap = astropng.AstroPNG(fits_fname)
     if os.path.exists(png_fname):
         os.remove(png_fname)
-    ap.to_png('test.png', crush = False)
+    ap.to_png(png_fname, crush = False)
+    
+    # To base 64 string
+    f = open(png_fname)
+    png_data = f.read()
+    
+    print base64.b64encode(png_data)
     
 if __name__ == '__main__':
     generate_test_data()

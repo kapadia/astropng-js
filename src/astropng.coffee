@@ -144,13 +144,12 @@ class AstroPNG
     
     length /= 4
     @quantization_parameters = (@view.getFloat32() for i in [1..length])
-    console.log @quantization_parameters
   
   read_nan_locations: (length) ->
     return if length == 0
     
-    length /= 4
-    @nan_locations = (@view.getUint32() for i in [1..length])
+    length /= 2
+    @nan_locations = (@view.getUint16() for i in [1..length])
   
   # Reads the IDAT (image data) into the class scope for later processing.
   read_idat: (length) ->
