@@ -1,12 +1,40 @@
 describe("AstroPNG", function(){
   
   var controlParameters = [4.74645138e+00, 6.40677869e-01, 9.19648933e+00, 3.50437552e-01, 6.68422365e+00, 1.55459598e-01, 3.45721102e+00, 7.64741004e-01, 4.70446157e+00, 4.83958751e-01, 7.82636926e-04, 4.67643142e-01];
-  var controlNans = [3, 3, 2, 5];
-  var controlImageData = [ [134, 111, 34, 0, 108, 44], [215, 124, 0, 161, 92, 174], [204, 0, 225, 399, 336, 555], [104, 0, 0, 65, 83, 0], [0, 131, 130, 184, 69, 98], [0, 28, 161, 98, 114, 47] ];
+  var controlXNans = [2, 5];
+  var controlYNans = [3, 3];
+  var controlImageData = [
+    9.10320816e+01, 7.62198029e+01, 2.62453003e+01,
+    4.74645138e+00, 7.36081848e+01, 3.28234215e+01,
+    8.46166916e+01, 5.26928787e+01, 9.19648933e+00,
+    6.53918991e+01, 4.15999374e+01, 7.01190567e+01,
+    3.83415642e+01, 6.68422365e+00, 4.17485962e+01,
+    6.86772690e+01, 5.88976631e+01, 9.30436478e+01,
+    8.30965347e+01, 3.45721102e+00, Number.NaN,
+    5.29700203e+01, 6.71149368e+01, Number.NaN,
+    4.70446157e+00, 6.78864746e+01, 6.79296417e+01,
+    9.34692917e+01, 3.83502083e+01, 5.19416389e+01,
+    7.82636926e-04, 1.31537790e+01, 7.55605316e+01,
+    4.58650131e+01, 5.32767220e+01, 2.18959179e+01
+  ];
   
   var imageSource = "iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGEAAAAACVN2zXAAAFYGZJVFNTSU1QTEUgID0gICAgICAgICAgICAgICAgICAgIFQgLyBjb25mb3JtcyB0byBGSVRTIHN0YW5kYXJkICAgICAgICAgICAgICAgICAgICAgIApCSVRQSVggID0gICAgICAgICAgICAgICAgICAtMzIgLyBhcnJheSBkYXRhIHR5cGUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApOQVhJUyAgID0gICAgICAgICAgICAgICAgICAgIDIgLyBudW1iZXIgb2YgYXJyYXkgZGltZW5zaW9ucyAgICAgICAgICAgICAgICAgICAgIApOQVhJUzEgID0gICAgICAgICAgICAgICAgICAgIDYgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApOQVhJUzIgID0gICAgICAgICAgICAgICAgICAgIDYgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDUlBJWDEgID0gICAgICAgICAgICAgICAgICAyLjUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDUlBJWDIgID0gICAgICAgICAgICAgICAgICAyLjUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDUlZBTDEgID0gICAgICAgICAgIDIxMC44MDE4NjggICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDUlZBTDIgID0gICAgICAgICAgICA1NC4zNDgxNzEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDRDFfMSAgID0gICAgICAgIC0wLjAwMDI3OTgwOTQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDRDFfMiAgID0gICAgICAgICAgMS41NjM2NEUtMDUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDRDJfMSAgID0gICAgICAgICAgMS41NTgyM0UtMDUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDRDJfMiAgID0gICAgICAgICAwLjAwMDI3OTE5MDIgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDVFlQRTEgID0gJ1JBLS0tVEFOJyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDVFlQRTIgID0gJ0RFQy0tVEFOJyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDVU5JVDEgID0gJ2RlZyAgICAgJyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApDVU5JVDIgID0gJ2RlZyAgICAgJyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGYK3rwAAAAwcUFOVECX4u4/JAN3QRMk0j6zbI1A1eUpPh8wzUBdQvI/Q8YRQJaK8z73yXE6TSngPu9u7B6iW8QAAAAIbkFOUwADAAMAAgAFY3q1WgAAAEtJREFUeJxjYGhjyGdQYmBgyGHQYWC4zlADZC5kiGFYx8BwBsh8yNjPGMCkzcCQwQACjgzBYJqhmaGJYQeDK0MSiCMD1JHEUMSgDwD6bQyJnTTvCgAAAABJRU5ErkJggg=="
   var decodedData = window.atob(imageSource);
   var ap = new AstroPNG(decodedData);
+
+  beforeEach(function () {  
+      this.addMatchers({  
+          toBeBetween: function (rangeFloor, rangeCeiling) {  
+              if (rangeFloor > rangeCeiling) {  
+                  var temp = rangeFloor;  
+                  rangeFloor = rangeCeiling;  
+                  rangeCeiling = temp;  
+              }  
+              return this.actual > rangeFloor && this.actual < rangeCeiling;  
+          }  
+      });  
+  });
+
 
   it("can read the IHDR chunk", function(){
     expect(ap.width).toEqual(6);
@@ -48,22 +76,29 @@ describe("AstroPNG", function(){
 
   it("can read the NAN locations", function(){
     var i;
-    var nans = ap.nan_locations
+    var x_nans = ap.x_nan;
+    var y_nans = ap.y_nan;
     
-    for (i = 0; i < nans.length; i += 1)
-      expect(nans[i]).toEqual(controlNans[i]);
+    for (i = 0; i < x_nans.length; i += 1)
+      expect(x_nans[i]).toEqual(controlXNans[i]);
+      expect(y_nans[i]).toEqual(controlYNans[i]);
   });
 
-  it("can read the integer image data", function(){
-    var i, j, row;
+  it("can read the float image data", function(){
+    var i, j, row, index;    
+    var tolerance = 1;
     
     for (j = 0; j < ap.height; j += 1) {
       row = ap.read_line();
       for (i = 0; i < ap.width; i += 1) {
-        expect(row[i]).toEqual(controlImageData[j][i]);
+        index = j * ap.width + i;
+        if (isNaN(controlImageData[index])) {
+          expect(isNaN(row[i])).toBeTruthy();
+        } else {
+          expect(row[i]).toBeBetween(controlImageData[index] - tolerance, controlImageData[index] + tolerance);
+        }
       }
     }
   });
-  
   
 });

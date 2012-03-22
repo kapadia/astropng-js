@@ -4,6 +4,7 @@ class AstroPNG
   constructor: (buffer) ->
     @view = new jDataView buffer, undefined, undefined, false
     @idat_chunks = []
+    @current_line = 0
     
     # Variables to help check PNG format
     @eof = false
@@ -15,6 +16,7 @@ class AstroPNG
     # Set up filtering related variables
     @filters = [@filter_none, @filter_sub, @filter_up, @filter_average, @filter_paeth]
 
+    # Loop through chunks
     while !@eof
       @read_chunk()
 
@@ -39,6 +41,19 @@ class AstroPNG
   # Convert bytes to an integer
   @to_integer: (bytes, index) ->
     return (bytes[index] << 24) | (bytes[index + 1] << 16) | (bytes[index + 2] << 8) | bytes[index + 3]
+
+  # Random number generator used for subtractive dithering
+  @random_number_generator: (n) ->
+    a     = 16807.0
+    m     = 2147483647.0
+    seed  = 1
+
+    random_numbers = []
+    for i in [0..n]
+      temp = a * seed
+      seed = temp - m * Math.floor(temp / m)
+      random_numbers.push(seed / m)
+    return random_numbers
 
   # Verify PNG signature
   @png_signature: [137, 80, 78, 71, 13, 10, 26, 10]
@@ -144,12 +159,17 @@ class AstroPNG
     
     length /= 4
     @quantization_parameters = (@view.getFloat32() for i in [1..length])
+    @random_numbers = AstroPNG.random_number_generator(@width * @height)
   
   read_nan_locations: (length) ->
     return if length == 0
     
     length /= 2
-    @nan_locations = (@view.getUint16() for i in [1..length])
+    nan_locations = (@view.getUint16() for i in [1..length])
+    
+    length /= 2
+    @y_nan = nan_locations.slice(0, length)
+    @x_nan = nan_locations.slice(length)
   
   # Reads the IDAT (image data) into the class scope for later processing.
   read_idat: (length) ->
@@ -180,8 +200,27 @@ class AstroPNG
       
       # Set the filter parameters for the next iteration
       a_param[index % @param_length] = recon_data[index]
+      
     @prev_line = recon_data
-    data = ((recon_data[index] << @shift | recon_data[index + @index_offset]) for index in [0..@line_length - 1] by @param_length)
+    if typeof(@quantization_parameters) != 'undefined'
+      zero  = @quantization_parameters[2*@current_line]
+      scale = @quantization_parameters[2*@current_line + 1]
+      r     = @random_numbers.slice(@current_line * @width, @current_line * @width + @width)
+      
+      data_integer = ((recon_data[index] << @shift | recon_data[index + @index_offset]) for index in [0..@line_length - 1] by @param_length)
+      data = ( (data_integer[index] - r[index] + 0.5) * scale + zero for index in [0..data_integer.length - 1] )
+      
+      # Replace NaNs in correct locations
+      indices = []
+      index = @y_nan.indexOf(@current_line)
+      while index != -1
+        indices.push(index)
+        index = @y_nan.indexOf(@current_line, index + 1)
+      data[@x_nan[index]] = Number.NaN for index in indices
+    else
+      data = ((recon_data[index] << @shift | recon_data[index + @index_offset]) for index in [0..@line_length - 1] by @param_length)
+    @current_line += 1
+    
     return data
     
   # Various filter functions, defined by the PNG specifications: http://www.w3.org/TR/PNG/#9Filters
@@ -215,6 +254,5 @@ class AstroPNG
       pr = c
     
     return pr
-
 
 window.AstroPNG = AstroPNG
