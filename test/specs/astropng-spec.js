@@ -39,7 +39,7 @@ describe("AstroPNG", function(){
   it("can read the IHDR chunk", function() {
     expect(ap.width).toEqual(6);
     expect(ap.height).toEqual(6);
-    expect(ap.bit_depth).toEqual(16);
+    expect(ap.bitDepth).toEqual(16);
   });
   
   it("can read the FITS header", function() {
@@ -66,7 +66,7 @@ describe("AstroPNG", function(){
   
   it("can read the quantization parameters", function() {
     var i;
-    var parameters = ap.quantization_parameters;
+    var parameters = ap.quantizationParameters;
     var precision = 6;
     var num_tiles = 6;
     
@@ -76,12 +76,13 @@ describe("AstroPNG", function(){
 
   it("can read the NAN locations", function() {
     var i;
-    var x_nans = ap.x_nan;
-    var y_nans = ap.y_nan;
+    var xNaNs = ap.xNaN;
+    var yNaNs = ap.yNaN
     
-    for (i = 0; i < x_nans.length; i += 1)
-      expect(x_nans[i]).toEqual(controlXNans[i]);
-      expect(y_nans[i]).toEqual(controlYNans[i]);
+    for (i = 0; i < xNaNs.length; i += 1) {
+      expect(xNaNs[i]).toEqual(controlXNans[i]);
+      expect(yNaNs[i]).toEqual(controlYNans[i]);      
+    }
   });
 
   it("can read line by line of float image data", function() {
@@ -89,7 +90,7 @@ describe("AstroPNG", function(){
     var tolerance = 0.5;
     
     for (j = 0; j < ap.height; j += 1) {
-      row = ap.read_line();
+      row = ap.readLine();
       for (i = 0; i < ap.width; i += 1) {
         index = j * ap.width + i;
         if (isNaN(controlImageData[index])) {
@@ -105,12 +106,12 @@ describe("AstroPNG", function(){
     var i;
     var tolerance = 0.5;
     
-    ap.read_image_data();
-    for (i = 0; i < ap.image_data.length; i += 1) {
+    ap.readImageData();
+    for (i = 0; i < ap.imageData.length; i += 1) {
       if (isNaN(controlImageData[i])) {
-        expect(isNaN(ap.image_data[i])).toBeTruthy();
+        expect(isNaN(ap.imageData[i])).toBeTruthy();
       } else {
-        expect(ap.image_data[i]).toBeBetween(controlImageData[i] - tolerance, controlImageData[i] + tolerance);
+        expect(ap.imageData[i]).toBeBetween(controlImageData[i] - tolerance, controlImageData[i] + tolerance);
       }
     }
   });
@@ -119,13 +120,11 @@ describe("AstroPNG", function(){
     var tolerance = 0.5;
     var precision = 6;
     
-    ap.compute_statistics();
-    expect(ap.minimum_pixel).toBeBetween(0.00078263693 - tolerance, 0.00078263693 + tolerance);
-    expect(ap.maximum_pixel).toBeBetween(93.469292 - tolerance, 93.469292 + tolerance);
+    ap.computeStatistics();
+    expect(ap.minimumPixel).toBeBetween(0.00078263693 - tolerance, 0.00078263693 + tolerance);
+    expect(ap.maximumPixel).toBeBetween(93.469292 - tolerance, 93.469292 + tolerance);
     expect(ap.mean).toBeBetween(49.304658777573529 - tolerance, 49.304658777573529 + tolerance);
     expect(ap.std).toBeBetween(28.376188349694765 - tolerance, 28.376188349694765 + tolerance);
   });
-  
-  
   
 });

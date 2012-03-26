@@ -3,66 +3,66 @@ class AstroPNG
   
   constructor: (buffer) ->
     @view = new jDataView buffer, undefined, undefined, false
-    @idat_chunks = []
-    @current_line = 0
+    @idatChunks = []
+    @currentLine = 0
     
     # Variables to help check PNG format
     @eof = false
-    @number_of_ihdr = 0
-    @number_of_idat = 0
+    @numberOfIHDR = 0
+    @numberOfIDAT = 0
     
-    @check_signature()
+    @checkSignature()
 
     # Set up filtering related variables
-    @filters = [@filter_none, @filter_sub, @filter_up, @filter_average, @filter_paeth]
+    @filters = [@filterNone, @filterSub, @filterUp, @filterAverage, @filterPaeth]
 
     # Loop through chunks
     while !@eof
-      @read_chunk()
+      @readChunk()
 
     # Initialize a decompressor for IDAT
-    @chunk_reader = new Inflator ({
+    @chunkReader = new Inflator ({
        chunk: 0,
        index: 2,
-       data: @idat_chunks,
-       num_chunks: @number_of_idat
+       data: @idatChunks,
+       num_chunks: @numberOfIDAT
        readByte: () ->
          if @chunk >= @data.length
            return -1
-         while (@index >= @data[this.chunk].length)
+         while (@index >= @data[@chunk].length)
            @index = 0
            @chunk += 1
-           if (@chunk >= @num_chunks)
+           if (@chunk >= @numChunks)
              return -1
          @index += 1
          return @data[@chunk][@index - 1]
     })
   
   # Convert bytes to an integer
-  @to_integer: (bytes, index) ->
+  @toInteger: (bytes, index) ->
     return (bytes[index] << 24) | (bytes[index + 1] << 16) | (bytes[index + 2] << 8) | bytes[index + 3]
 
   # Random number generator used for subtractive dithering
-  @random_number_generator: (n) ->
+  @randomNumberGenerator: (n) ->
     a     = 16807.0
     m     = 2147483647.0
     seed  = 1
 
-    random_numbers = []
+    randomNumbers = []
     for i in [0..n]
       temp = a * seed
       seed = temp - m * Math.floor(temp / m)
-      random_numbers.push(seed / m)
-    return random_numbers
+      randomNumbers.push(seed / m)
+    return randomNumbers
 
   # Verify PNG signature
-  @png_signature: [137, 80, 78, 71, 13, 10, 26, 10]
-  check_signature: -> @verify_byte(byte) for byte in AstroPNG.png_signature
-  verify_byte: (byte) ->
+  @pngSignature: [137, 80, 78, 71, 13, 10, 26, 10]
+  checkSignature: -> @verifyByte(byte) for byte in AstroPNG.pngSignature
+  verifyByte: (byte) ->
     throw "PNG signature is not correct" unless byte is @view.getUint8()
   
   # Read a PNG chunk, determines the length and type, and extracts the data
-  read_chunk: ->
+  readChunk: ->
     length = @view.getUint32()
     type = @view.getString(4)
     
@@ -70,15 +70,15 @@ class AstroPNG
     
     switch type
       when 'IHDR'
-        @read_ihdr length
+        @readIHDR length
       when 'fITS'
-        @read_fits_header length
+        @readFitsHeader length
       when 'qANT'
-        @read_quantization_parameters length
+        @readQuantizationParameters length
       when 'nANS'
-        @read_nan_locations length
+        @readNaNLocations length
       when 'IDAT'
-        @read_idat length
+        @readIDAT length
       when 'IEND'
         @eof = true
         return
@@ -97,35 +97,35 @@ class AstroPNG
    * filter method
    * interlace method
   ###
-  read_ihdr: (length) ->
-    @number_of_ihdr += 1
+  readIHDR: (length) ->
+    @numberOfIHDR += 1
     
     data = (@view.getUint8() for i in [1..length])
 
     # Check if the number of IHDR chunks exceeds one
-    throw "PNG contains too many IHDR chunks" if @number_of_ihdr > 1
+    throw "PNG contains too many IHDR chunks" if @numberOfIHDR > 1
 
-    @width = AstroPNG.to_integer data, 0
-    @height = AstroPNG.to_integer data, 4
+    @width = AstroPNG.toInteger data, 0
+    @height = AstroPNG.toInteger data, 4
 
     # Check the color type (only supporting grayscale for now)
-    allowed_color_types = [0]
-    throw "PNG contains an unallowed color type (only supporting grayscale)" if allowed_color_types.indexOf(data[9]) < 0
-    @color_type = data[9]
+    allowedColorTypes = [0]
+    throw "PNG contains an unallowed color type (only supporting grayscale)" if allowedColorTypes.indexOf(data[9]) < 0
+    @colorType = data[9]
 
     # Check the bit depth based on the color type (only support 8 and 16)
-    allowed_bit_depths = [8, 16]
-    throw "PNG contains an unallowed bit depth (only supporting 8 and 16 bit depths)" if allowed_bit_depths.indexOf(data[8]) < 0
-    @bit_depth = data[8]
+    allowedBitDepths = [8, 16]
+    throw "PNG contains an unallowed bit depth (only supporting 8 and 16 bit depths)" if allowedBitDepths.indexOf(data[8]) < 0
+    @bitDepth = data[8]
 
     # Define data relavant to bit depth needed to scan lines
-    @shift = @bit_depth - 8
-    @param_length = (@bit_depth / 8)
-    @line_length = @param_length * @width
-    @index_offset = @param_length - 1
+    @shift = @bitDepth - 8
+    @paramLength = (@bitDepth / 8)
+    @lineLength = @paramLength * @width
+    @indexOffset = @paramLength - 1
     
     # Initialize previous line with zeros
-    @prev_line = (0 for index in [1..@line_length])
+    @prevLine = (0 for index in [1..@lineLength])
     
     # Check the compression method
     throw "PNG contains an unknown compression method" if data[10] != 0
@@ -133,14 +133,14 @@ class AstroPNG
 
     # Check the filter method
     throw "PNG contains an unknown filter method" if data[11] != 0
-    @filter_method = data[11]
+    @filterMethod = data[11]
     
     # Check the interlace method
     throw "PNG contains an unknown interlace method" if data[12] != 0 and data[12] != 1
-    @interlace_method = data[12]
+    @interlaceMethod = data[12]
   
   # Read the FITS header  
-  read_fits_header: (length) ->
+  readFitsHeader: (length) ->
     return if length == 0
     
     data = @view.getString(length)
@@ -154,93 +154,93 @@ class AstroPNG
         @header[key] = value
     
   # Read the quantization parameters
-  read_quantization_parameters: (length) ->
+  readQuantizationParameters: (length) ->
     return if length == 0
     
     length /= 4
-    @quantization_parameters = (@view.getFloat32() for i in [1..length])
-    @random_numbers = AstroPNG.random_number_generator(@width * @height)
+    @quantizationParameters = (@view.getFloat32() for i in [1..length])
+    @randomNumbers = AstroPNG.randomNumberGenerator(@width * @height)
   
-  read_nan_locations: (length) ->
+  readNaNLocations: (length) ->
     return if length == 0
     
     length /= 2
-    nan_locations = (@view.getUint16() for i in [1..length])
+    nanLocations = (@view.getUint16() for i in [1..length])
     
     length /= 2
-    @y_nan = nan_locations.slice(0, length)
-    @x_nan = nan_locations.slice(length)
+    @yNaN = nanLocations.slice(0, length)
+    @xNaN = nanLocations.slice(length)
   
   # Reads the IDAT (image data) into the class scope for later processing.
-  read_idat: (length) ->
+  readIDAT: (length) ->
     data = (@view.getUint8() for i in [1..length])
-    @idat_chunks[@number_of_idat] = data
-    @number_of_idat += 1
+    @idatChunks[@numberOfIDAT] = data
+    @numberOfIDAT += 1
     
   # Scans a line for image data.
-  read_line: =>
+  readLine: =>
     # Reset the filter parameters
-    a_param = (0 for index in [1..@param_length])
+    aParam = (0 for index in [1..@paramLength])
     
     # Scan the line
-    filter_code = @chunk_reader.readByte()
-    data = (@chunk_reader.readByte() for index in [1..@line_length])
+    filterCode = @chunkReader.readByte()
+    data = (@chunkReader.readByte() for index in [1..@lineLength])
     
     # Storage for reconstructed data
-    recon_data = []
+    reconData = []
     
     for element, index in data
       # Get the filter parameters
-      a = a_param[index % @param_length]
-      b = @prev_line[index]
-      c = @prev_line[index - @param_length] ? 0
+      a = aParam[index % @paramLength]
+      b = @prevLine[index]
+      c = @prevLine[index - @paramLength] ? 0
       
       # Filter the data
-      recon_data[index] = @filters[filter_code] data[index], a, b, c
+      reconData[index] = @filters[filterCode] data[index], a, b, c
       
       # Set the filter parameters for the next iteration
-      a_param[index % @param_length] = recon_data[index]
+      aParam[index % @paramLength] = reconData[index]
       
-    @prev_line = recon_data
-    if typeof(@quantization_parameters) != 'undefined'
-      zero  = @quantization_parameters[2*@current_line]
-      scale = @quantization_parameters[2*@current_line + 1]
-      r     = @random_numbers.slice(@current_line * @width, @current_line * @width + @width)
+    @prevLine = reconData
+    if typeof(@quantizationParameters) != 'undefined'
+      zero  = @quantizationParameters[2*@currentLine]
+      scale = @quantizationParameters[2*@currentLine + 1]
+      r     = @randomNumbers.slice(@currentLine * @width, @currentLine * @width + @width)
       
-      data_integer = ((recon_data[index] << @shift | recon_data[index + @index_offset]) for index in [0..@line_length - 1] by @param_length)
-      data = ( (data_integer[index] - r[index] + 0.5) * scale + zero for index in [0..data_integer.length - 1] )
+      dataInteger = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
+      data = ( (dataInteger[index] - r[index] + 0.5) * scale + zero for index in [0..dataInteger.length - 1] )
       
       # Replace NaNs in correct locations
       indices = []
-      index = @y_nan.indexOf(@current_line)
+      index = @yNaN.indexOf(@currentLine)
       while index != -1
         indices.push(index)
-        index = @y_nan.indexOf(@current_line, index + 1)
-      data[@x_nan[index]] = Number.NaN for index in indices
+        index = @yNaN.indexOf(@currentLine, index + 1)
+      data[@xNaN[index]] = Number.NaN for index in indices
     else
-      data = ((recon_data[index] << @shift | recon_data[index + @index_offset]) for index in [0..@line_length - 1] by @param_length)
-    @current_line += 1
+      data = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
+    @currentLine += 1
     
     return data
     
   # Various filter functions, defined by the PNG specifications: http://www.w3.org/TR/PNG/#9Filters
-  filter_none: (x, a, b, c) =>
+  filterNone: (x, a, b, c) =>
     return x
   
-  filter_sub: (x, a, b, c) =>
+  filterSub: (x, a, b, c) =>
     return (x + a) & 0xff
   
-  filter_up: (x, a, b, c) =>
+  filterUp: (x, a, b, c) =>
     return (x + b) & 0xff
   
-  filter_average: (x, a, b, c) =>
+  filterAverage: (x, a, b, c) =>
     return (x + ((a + b) >> 1)) & 0xff
     
-  filter_paeth: (x, a, b, c) =>
-    pr = @paeth_predictor(a, b, c)
+  filterPaeth: (x, a, b, c) =>
+    pr = @paethPredictor(a, b, c)
     return (x + pr) & 0xff
   
-  paeth_predictor: (a, b, c) =>
+  paethPredictor: (a, b, c) =>
     p = a + b - c
     pa = Math.abs(p - a)
     pb = Math.abs(p - b)
@@ -255,38 +255,33 @@ class AstroPNG
     
     return pr
 
-  read_image_data: ->
-    @image_data = []    
-    @image_data = @image_data.concat(@read_line()) for j in [1..@height]
+  readImageData: ->
+    @imageData = []    
+    @imageData = @imageData.concat(@readLine()) for j in [1..@height]
   
-  compute_statistics: ->
-    @read_image_data() if not @image_data?
+  computeStatistics: ->
+    @readImageData() if not @imageData?
     
-    image_data = []
-    for pixel in @image_data
-      image_data.push(pixel) if not isNaN(pixel)
+    imageData = (pixel for pixel in @imageData when not isNaN(pixel))
     
     # Minimum and maximum pixels
-    @minimum_pixel = Math.min.apply Math, image_data
-    @maximum_pixel = Math.max.apply Math, image_data
+    @minimumPixel = Math.min.apply Math, imageData
+    @maximumPixel = Math.max.apply Math, imageData
     
     # Mean
     sum = 0
-    sum += pixel for pixel in image_data
-    @mean = sum / image_data.length
+    sum += pixel for pixel in imageData
+    @mean = sum / imageData.length
 
     # Standard deviation
     diff2 = 0
-    diff2 += (value - @mean) * (value - @mean) for value in image_data
-    diff2 /= image_data.length
+    diff2 += (pixel - @mean) * (pixel - @mean) for pixel in imageData
+    diff2 /= imageData.length
     @std = Math.sqrt(diff2)
   
-  draw_on_canvas: (context, vmin, vmax, stretch) ->
-    console.log 'draw_on_canvas'
-    
-    
-    
-    
+  getIntensity: (x, y) ->
+    index = @width * parseInt(y + 0.5) + parseInt(x + 0.5);
+    return @imageData[index]
     
   
 
