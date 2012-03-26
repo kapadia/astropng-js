@@ -281,6 +281,7 @@ class AstroPNG
   
   getIntensity: (x, y) ->
     index = @width * parseInt(y + 0.5) + parseInt(x + 0.5);
+    return false if index > @imageData.length
     return @imageData[index]
     
   
