@@ -255,4 +255,39 @@ class AstroPNG
     
     return pr
 
+  read_image_data: ->
+    @image_data = []    
+    @image_data = @image_data.concat(@read_line()) for j in [1..@height]
+  
+  compute_statistics: ->
+    @read_image_data() if not @image_data?
+    
+    image_data = []
+    for pixel in @image_data
+      image_data.push(pixel) if not isNaN(pixel)
+    
+    # Minimum and maximum pixels
+    @minimum_pixel = Math.min.apply Math, image_data
+    @maximum_pixel = Math.max.apply Math, image_data
+    
+    # Mean
+    sum = 0
+    sum += pixel for pixel in image_data
+    @mean = sum / image_data.length
+
+    # Standard deviation
+    diff2 = 0
+    diff2 += (value - @mean) * (value - @mean) for value in image_data
+    diff2 /= image_data.length
+    @std = Math.sqrt(diff2)
+  
+  draw_on_canvas: (context, vmin, vmax, stretch) ->
+    console.log 'draw_on_canvas'
+    
+    
+    
+    
+    
+  
+
 window.AstroPNG = AstroPNG
