@@ -202,13 +202,14 @@ class AstroPNG
       aParam[index % @paramLength] = reconData[index]
       
     @prevLine = reconData
-    if typeof(@quantizationParameters) != 'undefined'
+    if @quantizationParameters?
       zero  = @quantizationParameters[2*@currentLine]
       scale = @quantizationParameters[2*@currentLine + 1]
       r     = @randomNumbers.slice(@currentLine * @width, @currentLine * @width + @width)
       
       dataInteger = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
-      data = ( (dataInteger[index] - r[index] + 0.5) * scale + zero for index in [0..dataInteger.length - 1] )
+      data = ( (dataInteger[index] - r[index % @width] + 0.5) * scale + zero for index in [0..dataInteger.length - 1] )
+      r = r.slice(@width)
       
       # Replace NaNs in correct locations
       indices = []
