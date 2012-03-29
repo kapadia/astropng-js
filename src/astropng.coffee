@@ -261,7 +261,7 @@ class AstroPNG
     @imageData = @imageData.concat(@readLine()) for j in [1..@height]
   
   computeStatistics: ->
-    @readImageData() if not @imageData?
+    @readImageData() unless @imageData?
     
     imageData = (pixel for pixel in @imageData when not isNaN(pixel))
     
@@ -285,6 +285,4 @@ class AstroPNG
     return false if index > @imageData.length
     return @imageData[index]
     
-  
-
 window.AstroPNG = AstroPNG
