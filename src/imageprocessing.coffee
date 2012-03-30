@@ -69,7 +69,7 @@ ImageProcessing =
       index = i / 4
 
       pixel = @scale(imageData[index], min, range)
-      pixel = @normalize(pixel, softening, 'linear')
+      pixel = @normalize(pixel, softening, 'arcsinh')
       pixel = @scaleToColorSpace(pixel)
 
       canvasArr[i + 0] = pixel
