@@ -18,18 +18,40 @@ ImageProcessing =
     vmin = Math.sqrt(vmin / astropngs.length)
     vmax = Math.sqrt(vmax / astropngs.length)
     return [vmin, vmax]
+        
+  log10: (x) ->
+    return Math.log(x) / Math.log(10)
     
-  normalize: (z, beta) ->
-    z /= beta
-    return Math.log(z + Math.sqrt(1 + z * z))
+  arcsinh: (x) ->
+    return Math.log(x + Math.sqrt(1 + x * x))
+    
+  # normalize: (z, beta) ->
+  #   z /= beta
+  #   return Math.log(z + Math.sqrt(1 + z * z))
+  
+  normalize: (z, beta, stretch) ->
+    switch stretch
+      when 'log'
+        return @log10(z / 0.05 + 1.0) / @log(1.0 / 0.05 + 1.0)
+      when 'sqrt'
+        return Math.sqrt(z)
+      when 'arcsinh'
+        return @arcsinh(z / -0.033) / @arcsinh(1.0 / -0.033)
+      when 'power'
+        return Math.pow(z, 2)
+      else
+        return z
   
   normalizeLupton: (z, beta, min, max) ->
     return 0 if z < min
     return 1 if z > max
     return (@normalize(z - min, beta) / @normalize(max - min, beta))
     
-  scale: (pixel, min, max) ->
-    return 255 * (pixel - min) / (max - min)
+  scale: (pixel, min, range) ->
+    return (pixel - min) / range
+  
+  scaleToColorSpace: (pixel) ->
+    return Math.floor(255 * pixel + 0.5)
 
   stretch: (astropng, vmin, vmax, canvasArr) ->
     imageData = astropng.imageData
@@ -41,14 +63,14 @@ ImageProcessing =
 
     min = if vmin? then @normalize(vmin, softening) else @normalize(astropng.minimumPixel, softening)
     max = if vmax? then @normalize(vmax, softening) else @normalize(astropng.maximumPixel, softening)
-    console.log min, max
+    range = max - min
     
     for i in [0..length - 1] by 4
       index = i / 4
 
-      pixel = imageData[index]
-      pixel = @normalize(pixel, softening)
-      pixel = @scale(pixel, min, max)
+      pixel = @scale(imageData[index], min, range)
+      pixel = @normalize(pixel, softening, 'linear')
+      pixel = @scaleToColorSpace(pixel)
 
       canvasArr[i + 0] = pixel
       canvasArr[i + 1] = pixel
