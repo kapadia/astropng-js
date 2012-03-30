@@ -18,58 +18,55 @@ ImageProcessing =
     vmin = Math.sqrt(vmin / astropngs.length)
     vmax = Math.sqrt(vmax / astropngs.length)
     return [vmin, vmax]
-        
+
   log10: (x) ->
     return Math.log(x) / Math.log(10)
     
   arcsinh: (x) ->
     return Math.log(x + Math.sqrt(1 + x * x))
-    
-  # normalize: (z, beta) ->
-  #   z /= beta
-  #   return Math.log(z + Math.sqrt(1 + z * z))
-  
+
   normalize: (z, beta, stretch) ->
     switch stretch
       when 'log'
-        return @log10(z / 0.05 + 1.0) / @log(1.0 / 0.05 + 1.0)
+        return @log10(z / 0.05 + 1.0) / @log10(1.0 / 0.05 + 1.0)
       when 'sqrt'
         return Math.sqrt(z)
       when 'arcsinh'
+        z /= beta
         return @arcsinh(z / -0.033) / @arcsinh(1.0 / -0.033)
       when 'power'
         return Math.pow(z, 2)
       else
         return z
-  
+
   normalizeLupton: (z, beta, min, max) ->
     return 0 if z < min
     return 1 if z > max
     return (@normalize(z - min, beta) / @normalize(max - min, beta))
-    
+
   scale: (pixel, min, range) ->
     return (pixel - min) / range
-  
+
   scaleToColorSpace: (pixel) ->
     return Math.floor(255 * pixel + 0.5)
 
-  stretch: (astropng, vmin, vmax, canvasArr) ->
+  stretch: (astropng, vmin, vmax, stretchFunction, canvasArr) ->
     imageData = astropng.imageData
     softening = @softening[astropng.header.filter] || 1
-    console.log 'softening', softening
-    
+    stretchFunction = if stretchFunction? then stretchFunction else 'linear'
+
     numberOfPixels = imageData.length
     length = 4 * numberOfPixels
 
     min = if vmin? then @normalize(vmin, softening) else @normalize(astropng.minimumPixel, softening)
     max = if vmax? then @normalize(vmax, softening) else @normalize(astropng.maximumPixel, softening)
     range = max - min
-    
+
     for i in [0..length - 1] by 4
       index = i / 4
 
       pixel = @scale(imageData[index], min, range)
-      pixel = @normalize(pixel, softening, 'arcsinh')
+      pixel = @normalize(pixel, softening, stretchFunction)
       pixel = @scaleToColorSpace(pixel)
 
       canvasArr[i + 0] = pixel
@@ -83,7 +80,7 @@ ImageProcessing =
   luptonColorComposite: (astropngs, vmin, vmax, canvasArr) ->
     numberOfPixels = astropngs[0].imageData.length
     length = 4 * numberOfPixels
-    
+
     [vmin, vmax] = getExtremes(astropngs) unless vmin?
 
     softening = 1
@@ -127,5 +124,5 @@ ImageProcessing =
         canvasArr[i + 3] = 255
 
     return canvasArr
-  
+
 window.ImageProcessing = ImageProcessing
