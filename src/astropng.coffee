@@ -221,7 +221,6 @@ class AstroPNG
     else
       data = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
     @currentLine += 1
-    
     return data
     
   # Various filter functions, defined by the PNG specifications: http://www.w3.org/TR/PNG/#9Filters
@@ -260,14 +259,17 @@ class AstroPNG
     @imageData = []    
     @imageData = @imageData.concat(@readLine()) for j in [1..@height]
   
-  computeStatistics: ->
+  computeStatistics: =>
     @readImageData() unless @imageData?
     
     imageData = (pixel for pixel in @imageData when not isNaN(pixel))
-    
+
     # Minimum and maximum pixels
-    @minimumPixel = Math.min.apply Math, imageData
-    @maximumPixel = Math.max.apply Math, imageData
+    minsInRow = (Math.min.apply(Math, imageData[i*@width..i*@width+@width]) for i in [1..@height])
+    maxsInRow = (Math.max.apply(Math, imageData[i*@width..i*@width+@width]) for i in [1..@height])
+    
+    @minimumPixel = Math.min.apply(Math, minsInRow)
+    @maximumPixel = Math.max.apply(Math, maxsInRow)
     
     # Mean
     sum = 0

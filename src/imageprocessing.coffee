@@ -2,8 +2,13 @@
 ImageProcessing = 
   
   # http://www.sdss.org/dr7/algorithms/fluxcal.html#asinh_table
-  softening: { u: 1.4E-10, g: 0.9E-10, r: 1.2E-10, i: 1.8E-10, z: 7.4E-10 }
-  
+  softening:
+    u: 1.4E-10
+    g: 0.9E-10
+    r: 1.2E-10
+    i: 1.8E-10
+    z: 7.4E-10
+
   getExtremes: (astropngs) ->
     vmin = 0
     vmax = 0
@@ -26,16 +31,18 @@ ImageProcessing =
   scale: (pixel, min, max) ->
     return 255 * (pixel - min) / (max - min)
 
-  stretch: (astropng, vmin, vmax, canvasArr) ->    
+  stretch: (astropng, vmin, vmax, canvasArr) ->
     imageData = astropng.imageData
-    softening = @softening[astropng.header.filter]
+    softening = @softening[astropng.header.filter] || 1
+    console.log 'softening', softening
     
     numberOfPixels = imageData.length
     length = 4 * numberOfPixels
 
     min = if vmin? then @normalize(vmin, softening) else @normalize(astropng.minimumPixel, softening)
     max = if vmax? then @normalize(vmax, softening) else @normalize(astropng.maximumPixel, softening)
-
+    console.log min, max
+    
     for i in [0..length - 1] by 4
       index = i / 4
 
@@ -54,6 +61,8 @@ ImageProcessing =
   luptonColorComposite: (astropngs, vmin, vmax, canvasArr) ->
     numberOfPixels = astropngs[0].imageData.length
     length = 4 * numberOfPixels
+    
+    [vmin, vmax] = getExtremes(astropngs) unless vmin?
 
     softening = 1
     range = vmax - vmin
