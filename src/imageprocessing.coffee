@@ -52,7 +52,7 @@ ImageProcessing =
 
   stretch: (astropng, vmin, vmax, stretchFunction, canvasArr) ->
     imageData = astropng.imageData
-    softening = @softening[astropng.header.filter] || 1
+    softening = @softening[astropng.header['BAND']] || 1
     stretchFunction = if stretchFunction? then stretchFunction else 'linear'
 
     numberOfPixels = imageData.length

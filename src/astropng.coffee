@@ -13,9 +13,10 @@ class AstroPNG
     @numberOfIDAT = 0
 
     @checkSignature()
-    
-   
-    
+
+    @evt = document.createEvent("Event")
+    @evt.initEvent('readLine', true, true)
+
     # Set up filtering related variables
     @filters = [@filterNone, @filterSub, @filterUp, @filterAverage, @filterPaeth]
 
@@ -111,6 +112,8 @@ class AstroPNG
     @width = AstroPNG.toInteger data, 0
     @height = AstroPNG.toInteger data, 4
 
+    @evt.numberOfLines = @height
+
     # Check the color type (only supporting grayscale for now)
     allowedColorTypes = [0]
     throw "PNG contains an unallowed color type (only supporting grayscale)" if allowedColorTypes.indexOf(data[9]) < 0
@@ -155,6 +158,8 @@ class AstroPNG
         key = c[0].replace(/['"]/g, '').replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         value = c[1].replace(/['"]/g, '').split("/")[0].replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         @header[key] = value
+    @minimumPixel = parseFloat(@header['MINPIXEL']) if @header.hasOwnProperty('MINPIXEL')
+    @maximumPixel = parseFloat(@header['MAXPIXEL']) if @header.hasOwnProperty('MAXPIXEL')
     
   # Read the quantization parameters
   readQuantizationParameters: (length) ->
@@ -224,16 +229,12 @@ class AstroPNG
         data[@xNaN[index]] = Number.NaN for index in indices
     else
       data = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
-      
-    evt = document.createEvent("Event")
-    evt.initEvent('readLine', true, true)
-    evt.currentLine = @currentLine
-    evt.numberOfLines = @height
-    window.dispatchEvent(evt)
-    # @imageData = @imageData.concat(data)
-    
+
+    @evt.currentLine = @currentLine    
+    window.dispatchEvent(@evt)
+
+    @imageData = @imageData.concat(data)
     @currentLine += 1
-    return data
     
   # Various filter functions, defined by the PNG specifications: http://www.w3.org/TR/PNG/#9Filters
   filterNone: (x, a, b, c) =>
@@ -267,9 +268,8 @@ class AstroPNG
     
     return pr
 
-  readImageData: =>
-    @imageData = @imageData.concat(@readLine()) for j in [1..@height]
-  
+  readImageData: => @readLine() for j in [1..@height]
+
   computeStatistics: =>
     @readImageData() unless @imageData?
     
