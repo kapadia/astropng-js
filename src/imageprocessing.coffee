@@ -58,8 +58,10 @@ ImageProcessing =
     numberOfPixels = imageData.length
     length = 4 * numberOfPixels
 
-    min = if vmin? then @normalize(vmin, softening) else @normalize(astropng.minimumPixel, softening)
-    max = if vmax? then @normalize(vmax, softening) else @normalize(astropng.maximumPixel, softening)
+    min = if vmin? then @normalize(vmin, softening) else @normalize(astropng.vmin, softening)
+    max = if vmax? then @normalize(vmax, softening) else @normalize(astropng.vmax, softening)
+    astropng.setVmin(min)
+    astropng.setVmax(max)
     range = max - min
 
     for i in [0..length - 1] by 4

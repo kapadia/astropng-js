@@ -158,9 +158,9 @@ class AstroPNG
         key = c[0].replace(/['"]/g, '').replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         value = c[1].replace(/['"]/g, '').split("/")[0].replace(/^\s*([\S\s]*)\b\s*$/, '$1')
         @header[key] = value
-    @minimumPixel = parseFloat(@header['MINPIXEL']) if @header.hasOwnProperty('MINPIXEL')
-    @maximumPixel = parseFloat(@header['MAXPIXEL']) if @header.hasOwnProperty('MAXPIXEL')
-    
+    @minimumPixel = @vmin = parseFloat(@header['MINPIXEL']) if @header.hasOwnProperty('MINPIXEL')
+    @maximumPixel = @vmax = parseFloat(@header['MAXPIXEL']) if @header.hasOwnProperty('MAXPIXEL')
+
   # Read the quantization parameters
   readQuantizationParameters: (length) ->
     return if length == 0
@@ -189,11 +189,11 @@ class AstroPNG
   readLine: =>
     # Reset the filter parameters
     aParam = (0 for index in [1..@paramLength])
-    
+
     # Scan the line
     filterCode = @chunkReader.readByte()
     data = (@chunkReader.readByte() for index in [1..@lineLength])
-    
+
     # Storage for reconstructed data
     reconData = []
     
@@ -208,7 +208,7 @@ class AstroPNG
       
       # Set the filter parameters for the next iteration
       aParam[index % @paramLength] = reconData[index]
-      
+
     @prevLine = reconData
     if @quantizationParameters?
       zero  = @quantizationParameters[2*@currentLine]
@@ -292,6 +292,9 @@ class AstroPNG
     diff2 += (pixel - @mean) * (pixel - @mean) for pixel in imageData
     diff2 /= imageData.length
     @std = Math.sqrt(diff2)
+  
+  setVmin: (vmin) -> @vmin = vmin
+  setVmax: (vmax) -> @vmax = vmax
   
   getIntensity: (x, y) ->
     index = @width * parseInt(y + 0.5) + parseInt(x + 0.5);
