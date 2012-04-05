@@ -84,34 +84,20 @@ describe("AstroPNG", function(){
       expect(yNaNs[i]).toEqual(controlYNans[i]);      
     }
   });
-
-  it("can read line by line of float image data", function() {
-    var i, j, row, index;    
-    var tolerance = 0.5;
-    
-    for (j = 0; j < ap.height; j += 1) {
-      row = ap.readLine();
-      for (i = 0; i < ap.width; i += 1) {
-        index = j * ap.width + i;
-        if (isNaN(controlImageData[index])) {
-          expect(isNaN(row[i])).toBeTruthy();
-        } else {
-          expect(row[i]).toBeBetween(controlImageData[index] - tolerance, controlImageData[index] + tolerance);
-        }
-      }
-    }
-  });
   
   it("can read all float image data", function() {
-    var i;
+    var i, val;
     var tolerance = 0.5;
     
-    ap.readImageData();
+    for (j = 0; j < ap.height; j += 1)
+      ap.readLine();
     for (i = 0; i < ap.imageData.length; i += 1) {
       if (isNaN(controlImageData[i])) {
         expect(isNaN(ap.imageData[i])).toBeTruthy();
       } else {
-        expect(ap.imageData[i]).toBeBetween(controlImageData[i] - tolerance, controlImageData[i] + tolerance);
+        val = ap.imageData[i];
+        expect(val).toBeBetween(controlImageData[i] - tolerance, controlImageData[i] + tolerance);
+        console.log(val);
       }
     }
   });
@@ -119,8 +105,10 @@ describe("AstroPNG", function(){
   it("can compute image statistics", function() {
     var tolerance = 0.5;
     var precision = 6;
-    
+    for (j = 0; j < ap.height; j += 1)
+      ap.readLine();
     ap.computeStatistics();
+    
     expect(ap.minimumPixel).toBeBetween(0.00078263693 - tolerance, 0.00078263693 + tolerance);
     expect(ap.maximumPixel).toBeBetween(93.469292 - tolerance, 93.469292 + tolerance);
     expect(ap.mean).toBeBetween(49.304658777573529 - tolerance, 49.304658777573529 + tolerance);
