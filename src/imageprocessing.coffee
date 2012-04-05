@@ -75,6 +75,28 @@ ImageProcessing =
       canvasArr[i + 3] = 255
 
     return canvasArr
+  
+  stretchLine: (pixels, vmin, vmax, stretchFunction, canvasArr) ->
+    stretchFunction = if stretchFunction? then stretchFunction else 'linear'
+    
+    numberOfPixels = pixels.length
+    length = 4 * numberOfPixels
+    
+    min = @normalize(vmin, 1)
+    max = @normalize(vmax, 1)
+    range = max - min
+    
+    for i in [0..length - 1] by 4
+      index = i / 4
+      pixel = @scale(pixels[index], min, range)
+      pixel = @normalize(pixel, 1, stretchFunction)
+      pixel = @scaleToColorSpace(pixel)
+
+      canvasArr[i + 0] = pixel
+      canvasArr[i + 1] = pixel
+      canvasArr[i + 2] = pixel
+      canvasArr[i + 3] = 255
+    return canvasArr
 
   # http://adsabs.harvard.edu/abs/2004PASP..116..133L
   luptonColorComposite: (astropngs, vmin, vmax, canvasArr) ->

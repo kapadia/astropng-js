@@ -1,18 +1,21 @@
 
 class AstroPNG
-  
+
   constructor: (buffer) ->
     @view = new jDataView buffer, undefined, undefined, false
     @idatChunks = []
     @currentLine = 0
-    
+    @imageData = []
+
     # Variables to help check PNG format
     @eof = false
     @numberOfIHDR = 0
     @numberOfIDAT = 0
-    
-    @checkSignature()
 
+    @checkSignature()
+    
+   
+    
     # Set up filtering related variables
     @filters = [@filterNone, @filterSub, @filterUp, @filterAverage, @filterPaeth]
 
@@ -37,7 +40,7 @@ class AstroPNG
          @index += 1
          return @data[@chunk][@index - 1]
     })
-  
+
   # Convert bytes to an integer
   @toInteger: (bytes, index) ->
     return (bytes[index] << 24) | (bytes[index + 1] << 16) | (bytes[index + 2] << 8) | bytes[index + 3]
@@ -212,14 +215,23 @@ class AstroPNG
       @randomNumbers = @randomNumbers.slice(@width)
       
       # Replace NaNs in correct locations
-      indices = []
-      index = @yNaN.indexOf(@currentLine)
-      while index != -1
-        indices.push(index)
-        index = @yNaN.indexOf(@currentLine, index + 1)
-      data[@xNaN[index]] = Number.NaN for index in indices
+      if @yNaN?
+        indices = []
+        index = @yNaN.indexOf(@currentLine)
+        while index != -1
+          indices.push(index)
+          index = @yNaN.indexOf(@currentLine, index + 1)
+        data[@xNaN[index]] = Number.NaN for index in indices
     else
       data = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
+      
+    evt = document.createEvent("Event")
+    evt.initEvent('readLine', true, true)
+    evt.currentLine = @currentLine
+    evt.numberOfLines = @height
+    window.dispatchEvent(evt)
+    # @imageData = @imageData.concat(data)
+    
     @currentLine += 1
     return data
     
@@ -255,8 +267,7 @@ class AstroPNG
     
     return pr
 
-  readImageData: ->
-    @imageData = []    
+  readImageData: =>
     @imageData = @imageData.concat(@readLine()) for j in [1..@height]
   
   computeStatistics: =>
