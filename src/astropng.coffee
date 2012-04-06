@@ -50,13 +50,13 @@ class AstroPNG
   @randomNumberGenerator: (n) ->
     a     = 16807.0
     m     = 2147483647.0
-    seed  = 1
+    @seed  = 1
 
     randomNumbers = []
     for i in [0..n]
-      temp = a * seed
-      seed = temp - m * Math.floor(temp / m)
-      randomNumbers.push(seed / m)
+      temp = a * @seed
+      @seed = temp - m * Math.floor(temp / m)
+      randomNumbers.push(@seed / m)
     return randomNumbers
 
   # Verify PNG signature
@@ -147,7 +147,7 @@ class AstroPNG
   
   # Read the FITS header  
   readFitsHeader: (length) ->
-    return if length == 0
+    return if length is 0
     
     data = @view.getString(length)
     cards = data.split("\n");
@@ -163,14 +163,13 @@ class AstroPNG
 
   # Read the quantization parameters
   readQuantizationParameters: (length) ->
-    return if length == 0
+    return if length is 0
     
     length /= 4
     @quantizationParameters = (@view.getFloat32() for i in [1..length])
-    @randomNumbers = AstroPNG.randomNumberGenerator(@width * @height)
-  
+
   readNaNLocations: (length) ->
-    return if length == 0
+    return if length is 0
     
     length /= 2
     nanLocations = (@view.getUint16() for i in [1..length])
@@ -213,11 +212,10 @@ class AstroPNG
     if @quantizationParameters?
       zero  = @quantizationParameters[2*@currentLine]
       scale = @quantizationParameters[2*@currentLine + 1]
-      r     = @randomNumbers.slice(0, @width)
+      r     = AstroPNG.randomNumberGenerator(@width)
       
       dataInteger = ((reconData[index] << @shift | reconData[index + @indexOffset]) for index in [0..@lineLength - 1] by @paramLength)
       data = ( (dataInteger[index] - r[index] + 0.5) * scale + zero for index in [0..dataInteger.length - 1] )
-      @randomNumbers = @randomNumbers.slice(@width)
       
       # Replace NaNs in correct locations
       if @yNaN?
